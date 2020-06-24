@@ -35,6 +35,13 @@ class model():
         return inputs, targets, dec_inputs
 
 
+    def SE_net(self, se_input, r):
+        shape = se_input.get_shape().as_list()
+        global_avg_pooling1D = tf.layers.average_pooling1d(inputs=se_input, pool_size=shape[1], strides=shape[1], padding='same')
+        down = tf.layers.dense(inputs=global_avg_pooling1D, units=global_avg_pooling1D.get_shape().as_list()[2]//r, activation=tf.nn.relu)
+        up = tf.layers.dense(inputs=down, units=global_avg_pooling1D.get_shape().as_list()[2], activation=tf.nn.sigmoid)
+
+        return up
     def CNN_embedding(self, inputs, n_channels, input_depth, max_time):
         _inputs = tf.reshape(inputs, [-1, n_channels, input_depth // n_channels])  # 需要修改 shape = [None, 10, 28]
 
@@ -50,11 +57,15 @@ class model():
         conv_3 = tf.layers.conv1d(inputs=max_pool_2, filters=128, kernel_size=2, strides=1, padding='same',
                                   activation=tf.nn.relu)  # shape = [None, 3, 128]
 
-        shape = conv_3.get_shape().as_list()
+        # shape = conv_3.get_shape().as_list()
+        up = self.SE_net(conv_3, 8)
+        SE_conv3 = conv_3 * up
+        shape = SE_conv3.get_shape().as_list()
 
-        data_input_embed = tf.reshape(conv_3, (-1, max_time, shape[1] * shape[2]))
+        data_input_embed = tf.reshape(SE_conv3, (-1, max_time, shape[1] * shape[2]))
 
         return data_input_embed
+
 
     def encoding_layer(self, num_units, max_time, batch_size, data_input_embed, bidirectional):
         with tf.variable_scope("encoding") as encoding_scope:
@@ -191,3 +202,4 @@ class model():
                                                          bidirectional=bidirectional)
 
         return train_logits, infer_logits
+
