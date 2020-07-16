@@ -7,6 +7,7 @@
 @time:2020-06-18 22:37:12
 @month:六月
 """
+from sklearn.preprocessing import normalize
 import numpy as np
 import os
 def evaluate_metrics(confusion_matrix):
@@ -53,3 +54,7 @@ def best_result(TXT_name): # 用于选取所有epoch的最优结果，主要关�
             print(res)
 
 # mkdir('G:/ECG_data/Abalation2/model')
+
+def Standard(X):
+    x_normalize = normalize(X, norm='l2', axis=1) # 对每个样本进行标准化
+    return x_normalize

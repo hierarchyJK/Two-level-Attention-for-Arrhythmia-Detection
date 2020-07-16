@@ -12,7 +12,8 @@ import tqdm
 import numpy as np
 import scipy.io as spio
 from imblearn.over_sampling import SMOTE
-def read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=1):
+from utils import Standard
+def read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=1, use_Embedding=True):
     """
     :param filename: the .mat file path
     :param max_time: the hyper-parameter of sequence length
@@ -63,6 +64,7 @@ def read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=1):
             l_labels += 1
     print('训练集中标签数量：', len(t_labels))
 
+
     assert len(data) == len(t_labels)
 
     del samples, labels, values
@@ -72,6 +74,10 @@ def read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=1):
     shape_v = data.shape
     print('shape_v:', shape_v)
     data = np.reshape(data, [shape_v[0], -1]) #(50940, 280)
+
+    if not use_Embedding: # 不使用Embedding的时候对每个心拍进行标准化
+        data = Standard(data)
+
     t_labels = np.asarray(t_labels)
     print(t_labels[:10])
     _data = np.asarray([], dtype=np.float64).reshape(0, shape_v[1])

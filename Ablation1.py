@@ -7,15 +7,6 @@
 @time:2020-07-16 11:37:57
 @month:七月
 """
-# -*- coding:utf-8 -*-
-"""
-@project: ECG_Seq2Seq
-@author: KunJ
-@file: Abalation1.py.py
-@ide: Pycharm
-@time: 2020-07-16 11:36:12
-@month: 七月
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io as spio
@@ -31,14 +22,16 @@ from sklearn.model_selection import train_test_split
 import argparse
 import tqdm
 import gc
-from utils import mkdir, batch_data, evaluate_metrics
+from utils import mkdir, batch_data, evaluate_metrics, Standard
 from extract_data import read_mitbih
+
 random.seed(654)
 
-def data_process(max_time, n_oversampling, classes, filename):
-    X_train, y_train = read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=1)
-    X_test, y_test = read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=0)
+def data_process(max_time, n_oversampling, classes, filename, use_Embedding):
+    X_train, y_train = read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=1, use_Embedding=use_Embedding)
+    X_test, y_test = read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=0, use_Embedding=use_Embedding)
 
+    print(X_train[0])
     input_depth = X_train.shape[2]
     print(input_depth)  # 280
     n_channels = 10
@@ -116,31 +109,42 @@ def data_process(max_time, n_oversampling, classes, filename):
     return X_train, y_train, X_test, y_test, n_classes, char2numY, input_depth, y_seq_length
 
 
-def build_network(inputs, dec_inputs, char2numY, n_channels=10, input_depth=280, num_units=128, max_time=10,
-                  bidirectional=False):
-    _inputs = tf.reshape(inputs, [-1, n_channels, input_depth // n_channels])
-    # _inputs = tf.reshape(inputs, [-1,input_depth,n_channels])
+def build_network(inputs, dec_inputs, char2numY, n_channels=10, input_depth=280, num_units=128, max_time=10, bidirectional=False,
+                  use_Embedding=False):
+    data_input_embed = None
 
-    # #(batch*max_time, 280, 1) --> (N, 280, 18)
-    conv1 = tf.layers.conv1d(inputs=_inputs, filters=32, kernel_size=2, strides=1,
-                             padding='same', activation=tf.nn.relu)
-    max_pool_1 = tf.layers.max_pooling1d(inputs=conv1, pool_size=2, strides=2, padding='same')
+    if use_Embedding == True:
+        _inputs = tf.reshape(inputs, [-1, n_channels, input_depth // n_channels])
+        # _inputs = tf.reshape(inputs, [-1,input_depth,n_channels])
 
-    conv2 = tf.layers.conv1d(inputs=max_pool_1, filters=64, kernel_size=2, strides=1,
-                             padding='same', activation=tf.nn.relu)
-    max_pool_2 = tf.layers.max_pooling1d(inputs=conv2, pool_size=2, strides=2, padding='same')
+        # #(batch*max_time, 280, 1) --> (N, 280, 18)
+        conv1 = tf.layers.conv1d(inputs=_inputs, filters=32, kernel_size=2, strides=1,
+                                 padding='same', activation=tf.nn.relu)
+        max_pool_1 = tf.layers.max_pooling1d(inputs=conv1, pool_size=2, strides=2, padding='same')
 
-    conv3 = tf.layers.conv1d(inputs=max_pool_2, filters=128, kernel_size=2, strides=1,
-                             padding='same', activation=tf.nn.relu)
+        conv2 = tf.layers.conv1d(inputs=max_pool_1, filters=64, kernel_size=2, strides=1,
+                                 padding='same', activation=tf.nn.relu)
+        max_pool_2 = tf.layers.max_pooling1d(inputs=conv2, pool_size=2, strides=2, padding='same')
 
-    shape = conv3.get_shape().as_list()
-    data_input_embed = tf.reshape(conv3, (-1, max_time, shape[1] * shape[2]))
+        conv3 = tf.layers.conv1d(inputs=max_pool_2, filters=128, kernel_size=2, strides=1,
+                                 padding='same', activation=tf.nn.relu)
+
+        shape = conv3.get_shape().as_list() #(None, 3, 128)
+
+        data_input_embed = tf.reshape(conv3, (-1, max_time, shape[1] * shape[2]))
+        print("Embedding")
+    elif use_Embedding == False:
+        data_input_embed = tf.reshape(inputs, (-1, max_time, 280))
+        print("no Embedding")
+
+    print(data_input_embed.get_shape().as_list(),'++++++++++++++')
 
     embed_size = 10  # 128 lstm_size # shape[1]*shape[2]
 
-    # Embedding layers
     output_embedding = tf.Variable(tf.random_uniform((len(char2numY), embed_size), -1.0, 1.0), name='dec_embedding')
+    print(output_embedding.get_shape().as_list())
     data_output_embed = tf.nn.embedding_lookup(output_embedding, dec_inputs)
+
 
     with tf.variable_scope("encoding") as encoding_scope:
         if not bidirectional:
@@ -182,7 +186,8 @@ def main():
     parser.add_argument('--test_steps', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=20)
     parser.add_argument('--data_dir', type=str, default='G:/ECG_data/s2s_mitbih_aami_DS1DS2.mat')
-    parser.add_argument('--bidirectional', type=bool, default='False')
+    parser.add_argument('--bidirectional', type=bool, default=False)
+    parser.add_argument('--use_Embedding', type=bool, default=True)
     parser.add_argument('--num_units', type=int, default=128)
     parser.add_argument('--n_oversample', type=int, default=6000)
     parser.add_argument('--checkpoint_dir', type=str, default='G:/ECG_data/Abalation1/model')
@@ -193,13 +198,13 @@ def main():
 
     run_program(args)
 
-
 def run_program(args):
     max_time = args.max_time  # defaule 9
     epochs = args.epochs  # 1000
     batch_size = args.batch_size  # 20
     num_units = args.num_units  # 128
     bidirectional = args.bidirectional
+    use_Embedding = args.use_Embedding  # 是否对输出进行Embedding，否的话进行标准化输入
     n_oversampling = args.n_oversample
     checkpoint_dir = args.checkpoint_dir
     ckpt_name = args.ckpt_name
@@ -208,8 +213,9 @@ def run_program(args):
     filename = args.data_dir
     result_dir = args.result_dir  # 用于保存每次结果
 
+    print(use_Embedding, "==============++++++++++++++++++++++=+++++++++++++++++")
     X_train, y_train, X_test, y_test, n_classes, char2numY, input_depth, y_seq_length \
-        = data_process(max_time, n_oversampling, classes, filename)
+        = data_process(max_time, n_oversampling, classes, filename, use_Embedding)
 
     # Placeholders
     inputs = tf.placeholder(tf.float32, [None, max_time, input_depth], name='inputs')
@@ -218,7 +224,7 @@ def run_program(args):
 
     logits = build_network(inputs, dec_inputs, char2numY, n_channels=10, input_depth=input_depth,
                            num_units=num_units, max_time=max_time,
-                           bidirectional=bidirectional)
+                           bidirectional=bidirectional, use_Embedding=use_Embedding,)
 
     with tf.name_scope("optimization"):
         # Loss function
@@ -338,9 +344,9 @@ def run_program(args):
 
 
 if __name__ == "__main__":
-    """消融实验1：CNN + Seq2Seq"""
+    """消融实验：CNN + Seq2Seq 和 不带Embedding的Seq2Seq"""
     time_start = time.time()
-    print("=============TRAIN_STATR=============")
+    print("=============TRAIN_START=============")
     main()
     print("=============TRAIN_end=============")
     time_end = time.time()

@@ -202,7 +202,7 @@ def train(args):
 
 if __name__ == "__main__":
     time_start = time.time()
-    print("=============TRAIN_STATR=============")
+    print("=============TRAIN_START=============")
     main()
     print("=============TRAIN_end=============")
     time_end = time.time()
