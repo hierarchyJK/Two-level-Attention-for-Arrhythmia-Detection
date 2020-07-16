@@ -158,7 +158,6 @@ def data_process(max_time, n_oversampling, classes, filename):
         ind = np.where(classes==cl)[0][0]
         nums.append(len(np.where(y_train.flatten() == ind)[0]))
 
-
     ratio = {0: nums[0], 1: n_oversampling + 1000, 2: n_oversampling}
     sm = SMOTE(random_state=2020, ratio=ratio)
 

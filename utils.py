@@ -52,3 +52,4 @@ def best_result(TXT_name): # 用于选取所有epoch的最优结果，主要关�
         if res[4] > 0.93 and res[6] > 0.94 and res[10] >0.99:
             print(res)
 
+# mkdir('G:/ECG_data/Abalation2/model')

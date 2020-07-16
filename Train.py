@@ -45,9 +45,9 @@ def main():
 
 
 def train(args):
-    max_time = args.max_time # defaule 5
-    epochs = args.epochs # 500
-    batch_size = args.batch_size # 16
+    max_time = args.max_time # defaule 9
+    epochs = args.epochs # 1000
+    batch_size = args.batch_size # 20
     num_units = args.num_units # 128
     bidirectional = args.bidirectional
     n_oversampling = args.n_oversample
@@ -125,7 +125,7 @@ def train(args):
             strings = "{:1.4f} {:1.4f} {:1.4f} {:1.4f}".format(sensitivity[index_], specificity[index_], PPV[index_], acc[index_])
             info += strings
 
-        print('\n Sensitivity: {:1.4f}, Specificity: {:1.4f}, Precision: {:1.4f}, Accuracy: {:1.4f}'.format(
+        print('\n Average -> Sensitivity: {:1.4f}, Specificity: {:1.4f}, Precision: {:1.4f}, Accuracy: {:1.4f}'.format(
             np.mean(sensitivity),
             np.mean(specificity),
             np.mean(PPV),
