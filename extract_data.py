@@ -108,7 +108,6 @@ def read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=1):
     print(data.shape, labels.shape, len(data))
     return data, labels
 
-
 def data_process(max_time, n_oversampling, classes, filename):
 
     X_train, y_train = read_mitbih(filename, max_time, classes, max_nlabel=50000, trainset=1)
@@ -192,5 +191,7 @@ def data_process(max_time, n_oversampling, classes, filename):
     for ii in range(2):
         print(''.join([num2CharY[y_] for y_ in list(y_test[ii])]))
 
-    return X_train, y_train, X_test, y_test, n_classes, char2numY, input_depth, y_seq_length,
+    return X_train, y_train, X_test, y_test, n_classes, char2numY, input_depth, y_seq_length
+
+
 

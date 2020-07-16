@@ -8,7 +8,7 @@
 @month:六月
 """
 import numpy as np
-
+import os
 def evaluate_metrics(confusion_matrix):
     # https://stackoverflow.com/questions/31324218/scikit-learn-how-to-obtain-true-positive-true-negative-false-positive-and-fal
     # Sensitivity, hit rate, recall, or
@@ -37,3 +37,18 @@ def batch_data(X, y, batch_size):
     while start + batch_size <= len(X):
         yield X[start: start + batch_size], y[start: start + batch_size]
         start += batch_size
+
+def mkdir(dir_path):
+    # 存在此目录则删除，不存在则创建
+    if os.path.exists(dir_path):
+        os.rmdir(dir_path)
+    elif not os.path.exists(dir_path):
+        os.mkdir(dir_path)
+
+def best_result(TXT_name): # 用于选取所有epoch的最优结果，主要关注S类的SEN和PPV，以及V类的PPV
+    result = np.loadtxt(TXT_name)
+    # print(result, type(result), result.shape)
+    for res in result:
+        if res[4] > 0.93 and res[6] > 0.94 and res[10] >0.99:
+            print(res)
+
