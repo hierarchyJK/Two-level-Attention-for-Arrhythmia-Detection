@@ -187,7 +187,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=20)
     parser.add_argument('--data_dir', type=str, default='G:/ECG_data/s2s_mitbih_aami_DS1DS2.mat')
     parser.add_argument('--bidirectional', type=bool, default=False)
-    parser.add_argument('--use_Embedding', type=bool, default=True)
+    parser.add_argument('--use_Embedding', type=bool, default=False)
     parser.add_argument('--num_units', type=int, default=128)
     parser.add_argument('--n_oversample', type=int, default=6000)
     parser.add_argument('--checkpoint_dir', type=str, default='G:/ECG_data/Abalation1/model')
