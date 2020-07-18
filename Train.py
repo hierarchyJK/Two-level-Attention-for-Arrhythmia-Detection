@@ -25,18 +25,19 @@ from extract_data import data_process
 from utils import evaluate_metrics, batch_data, mkdir
 from Model import model
 
-def main():
+def main(i):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', type=int, default=1000)
+    parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--max_time', type=int, default=9)
     parser.add_argument('--test_steps', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=20)
     parser.add_argument('--data_dir', type=str, default='G:/ECG_data/s2s_mitbih_aami_DS1DS2.mat')
-    parser.add_argument('--bidirectional', type=bool, default='False')
+    parser.add_argument('--bidirectional', type=bool, default=False)
+    parser.add_argument('--use_SE', type=bool, default=False)
     parser.add_argument('--num_units', type=int, default=128)
     parser.add_argument('--n_oversample', type=int, default=6000)
-    parser.add_argument('--checkpoint_dir', type=str, default='G:/ECG_data/model_save/model')
-    parser.add_argument('--result_dir', type=str, default='G:/ECG_data/model_save/result_0')
+    parser.add_argument('--result_dir', type=str, default='G:\\ECG_data\\Abalation\\Abalation1\\result_' + str(i))
+    parser.add_argument('--checkpoint_dir', type=str, default='G:\\ECG_data\\Abalation\\Abalation1\\result_' + str(i) + '\\model')
     parser.add_argument('--ckpt_name', type=str, default='seq2seq_mitbih_DS1DS2.ckpt')
     parser.add_argument('--classes', nargs="+", type=chr, default=['N', 'S', 'V'])
     args = parser.parse_args()
@@ -52,11 +53,12 @@ def train(args):
     bidirectional = args.bidirectional
     n_oversampling = args.n_oversample
     checkpoint_dir = args.checkpoint_dir
+    result_dir = args.result_dir
     ckpt_name = args.ckpt_name
     test_steps = args.test_steps
     classes = args.classes  # ['N', 'S','V']
     filename = args.data_dir
-    result_dir = args.result_dir # 用于保存每次结果
+    use_SE = args.use_SE
 
     X_train, y_train, X_test, y_test, n_classes, char2numY, input_depth, y_seq_length\
     = data_process(max_time, n_oversampling, classes, filename)
@@ -73,8 +75,9 @@ def train(args):
                                                    n_channels=10,
                                                    input_depth=input_depth,
                                                    max_time=max_time,
-                                                   bidirectional=bidirectional)
-    with tf.name_scope('optimization'):
+                                                   bidirectional=bidirectional,
+                                                   use_SE=use_SE)
+    with tf.variable_scope("optimization", reuse=tf.AUTO_REUSE):
         vars = tf.trainable_variables()
         beta = 0.001
         lossL2 = tf.add_n([tf.nn.l2_loss(v) for v in vars if 'bias' not in v.name]) * beta
@@ -143,8 +146,9 @@ def train(args):
 
     count_pramaters()
 
-    mkdir(checkpoint_dir)
     mkdir(result_dir)
+    mkdir(checkpoint_dir)
+
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -203,7 +207,9 @@ def train(args):
 if __name__ == "__main__":
     time_start = time.time()
     print("=============TRAIN_START=============")
-    main()
+    times = 2
+    for i in range(times):
+        main(i)
     print("=============TRAIN_end=============")
     time_end = time.time()
     print("跑一次耗时：{:.4f}".format(time_end - time_start))
