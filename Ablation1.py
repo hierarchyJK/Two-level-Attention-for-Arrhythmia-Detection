@@ -109,30 +109,63 @@ def data_process(max_time, n_oversampling, classes, filename, use_Embedding):
     return X_train, y_train, X_test, y_test, n_classes, char2numY, input_depth, y_seq_length
 
 
+def SE_net(se_input, r):
+    shape = se_input.get_shape().as_list()
+    global_avg_pooling1D = tf.layers.average_pooling1d(inputs=se_input, pool_size=shape[1], strides=shape[1],
+                                                           padding='same')
+    down = tf.layers.dense(inputs=global_avg_pooling1D, units=global_avg_pooling1D.get_shape().as_list()[2] // r,
+                               activation=tf.nn.relu)
+    up = tf.layers.dense(inputs=down, units=global_avg_pooling1D.get_shape().as_list()[2], activation=tf.nn.sigmoid)
+    return up
 def build_network(inputs, dec_inputs, char2numY, n_channels=10, input_depth=280, num_units=128, max_time=10, bidirectional=False,
-                  use_Embedding=False):
+                  use_Embedding=False, use_SE=False):
     data_input_embed = None
-
     if use_Embedding == True:
-        _inputs = tf.reshape(inputs, [-1, n_channels, input_depth // n_channels])
-        # _inputs = tf.reshape(inputs, [-1,input_depth,n_channels])
+        if not use_SE:
+            _inputs = tf.reshape(inputs, [-1, n_channels, input_depth // n_channels])
+            # _inputs = tf.reshape(inputs, [-1,input_depth,n_channels])
 
-        # #(batch*max_time, 280, 1) --> (N, 280, 18)
-        conv1 = tf.layers.conv1d(inputs=_inputs, filters=32, kernel_size=2, strides=1,
-                                 padding='same', activation=tf.nn.relu)
-        max_pool_1 = tf.layers.max_pooling1d(inputs=conv1, pool_size=2, strides=2, padding='same')
+            # #(batch*max_time, 280, 1) --> (N, 280, 18)
+            conv1 = tf.layers.conv1d(inputs=_inputs, filters=32, kernel_size=2, strides=1,
+                                     padding='same', activation=tf.nn.relu)
+            max_pool_1 = tf.layers.max_pooling1d(inputs=conv1, pool_size=2, strides=2, padding='same')
 
-        conv2 = tf.layers.conv1d(inputs=max_pool_1, filters=64, kernel_size=2, strides=1,
-                                 padding='same', activation=tf.nn.relu)
-        max_pool_2 = tf.layers.max_pooling1d(inputs=conv2, pool_size=2, strides=2, padding='same')
+            conv2 = tf.layers.conv1d(inputs=max_pool_1, filters=64, kernel_size=2, strides=1,
+                                     padding='same', activation=tf.nn.relu)
+            max_pool_2 = tf.layers.max_pooling1d(inputs=conv2, pool_size=2, strides=2, padding='same')
 
-        conv3 = tf.layers.conv1d(inputs=max_pool_2, filters=128, kernel_size=2, strides=1,
-                                 padding='same', activation=tf.nn.relu)
+            conv3 = tf.layers.conv1d(inputs=max_pool_2, filters=128, kernel_size=2, strides=1,
+                                     padding='same', activation=tf.nn.relu)
 
-        shape = conv3.get_shape().as_list() #(None, 3, 128)
+            shape = conv3.get_shape().as_list() #(None, 3, 128)
+            data_input_embed = tf.reshape(conv3, (-1, max_time, shape[1] * shape[2]))
+            print("no use_SE")
+        elif use_SE:
+            _inputs = tf.reshape(inputs, [-1, n_channels, input_depth // n_channels])
+            # _inputs = tf.reshape(inputs, [-1,input_depth,n_channels])
 
-        data_input_embed = tf.reshape(conv3, (-1, max_time, shape[1] * shape[2]))
+            # #(batch*max_time, 280, 1) --> (N, 280, 18)
+            conv1 = tf.layers.conv1d(inputs=_inputs, filters=32, kernel_size=2, strides=1,
+                                     padding='same', activation=tf.nn.relu)
+            max_pool_1 = tf.layers.max_pooling1d(inputs=conv1, pool_size=2, strides=2, padding='same')
+            up1 = SE_net(max_pool_1, 4)
+            max_pool_1 = max_pool_1 * up1
+
+            conv2 = tf.layers.conv1d(inputs=max_pool_1, filters=64, kernel_size=2, strides=1,
+                                     padding='same', activation=tf.nn.relu)
+            max_pool_2 = tf.layers.max_pooling1d(inputs=conv2, pool_size=2, strides=2, padding='same')
+            up2 = SE_net(max_pool_2, 8)
+            max_pool_2 = max_pool_2 * up2
+
+            conv3 = tf.layers.conv1d(inputs=max_pool_2, filters=128, kernel_size=2, strides=1,
+                                     padding='same', activation=tf.nn.relu)
+            up3 = SE_net(conv3, 16)
+            conv3 = conv3 * up3
+            shape = conv3.get_shape().as_list()  # (None, 3, 128)
+            data_input_embed = tf.reshape(conv3, (-1, max_time, shape[1] * shape[2]))
+            print("use SE")
         print("Embedding")
+
     elif use_Embedding == False:
         data_input_embed = tf.reshape(inputs, (-1, max_time, 280))
         print("no Embedding")
@@ -146,7 +179,7 @@ def build_network(inputs, dec_inputs, char2numY, n_channels=10, input_depth=280,
     data_output_embed = tf.nn.embedding_lookup(output_embedding, dec_inputs)
 
 
-    with tf.variable_scope("encoding") as encoding_scope:
+    with tf.variable_scope("encoding", reuse=tf.AUTO_REUSE) as encoding_scope:
         if not bidirectional:
             # Regular approach with LSTM units
             lstm_enc = tf.contrib.rnn.LSTMCell(num_units)
@@ -166,7 +199,7 @@ def build_network(inputs, dec_inputs, char2numY, n_channels=10, input_depth=280,
             enc_fin_h = tf.concat((enc_fw_final.h, enc_bw_final.h), 1)
             last_state = tf.contrib.rnn.LSTMStateTuple(c=enc_fin_c, h=enc_fin_h)
 
-    with tf.variable_scope("decoding") as decoding_scope:
+    with tf.variable_scope("decoding",reuse=tf.AUTO_REUSE) as decoding_scope:
         if not bidirectional:
             lstm_dec = tf.contrib.rnn.LSTMCell(num_units)
         else:
@@ -181,17 +214,18 @@ def build_network(inputs, dec_inputs, char2numY, n_channels=10, input_depth=280,
 
 def main(i):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--epochs', type=int, default=1000)
+    parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--max_time', type=int, default=9)
     parser.add_argument('--test_steps', type=int, default=1)
     parser.add_argument('--batch_size', type=int, default=20)
-    parser.add_argument('--data_dir', type=str, default='G:/ECG_data/s2s_mitbih_aami_DS1DS2.mat')
+    parser.add_argument('--data_dir', type=str, default='G:\\ECG_data\\s2s_mitbih_aami_DS1DS2.mat')
     parser.add_argument('--bidirectional', type=bool, default=False)
     parser.add_argument('--use_Embedding', type=bool, default=False)
+    parser.add_argument('--use_SE', type=bool, default=False)
     parser.add_argument('--num_units', type=int, default=128)
     parser.add_argument('--n_oversample', type=int, default=6000)
-    parser.add_argument('--result_dir', type=str, default='G:/ECG_data/Abalation1/result_' + str(i))
-    parser.add_argument('--checkpoint_dir', type=str, default='G:/ECG_data/Abalation1/result_' + str(i) + '/model')
+    parser.add_argument('--result_dir', type=str, default='G:\\ECG_data\\Abalation1\\result_' + str(i))
+    parser.add_argument('--checkpoint_dir', type=str, default='G:\\ECG_data\\Abalation1\\result_' + str(i) + '\\model')
     parser.add_argument('--ckpt_name', type=str, default='seq2seq_mitbih_DS1DS2.ckpt')
     parser.add_argument('--classes', nargs="+", type=chr, default=['N', 'S', 'V'])
     args = parser.parse_args()
@@ -205,6 +239,7 @@ def run_program(args):
     num_units = args.num_units  # 128
     bidirectional = args.bidirectional
     use_Embedding = args.use_Embedding  # 是否对输出进行Embedding，否的话进行标准化输入
+    use_SE = args.use_SE
     n_oversampling = args.n_oversample
     checkpoint_dir = args.checkpoint_dir
     ckpt_name = args.ckpt_name
@@ -224,9 +259,10 @@ def run_program(args):
 
     logits = build_network(inputs, dec_inputs, char2numY, n_channels=10, input_depth=input_depth,
                            num_units=num_units, max_time=max_time,
-                           bidirectional=bidirectional, use_Embedding=use_Embedding,)
+                           bidirectional=bidirectional, use_Embedding=use_Embedding,use_SE=use_SE)
 
-    with tf.name_scope("optimization"):
+    with tf.variable_scope("optimization", reuse=tf.AUTO_REUSE):
+    # with tf.name_scope("optimization"):
         # Loss function
         vars = tf.trainable_variables()
         beta = 0.001
@@ -284,8 +320,9 @@ def run_program(args):
 
     count_prameters()
 
-    mkdir(checkpoint_dir)
     mkdir(result_dir)
+    mkdir(checkpoint_dir)
+
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -347,7 +384,7 @@ if __name__ == "__main__":
     """消融实验：CNN + Seq2Seq 和 不带Embedding的Seq2Seq"""
     time_start = time.time()
     print("=============TRAIN_START=============")
-    times = 10
+    times = 2
     for i in range(times):
         main(i)
     print("=============TRAIN_end=============")
