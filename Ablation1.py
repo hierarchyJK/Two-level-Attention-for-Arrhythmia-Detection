@@ -179,7 +179,7 @@ def build_network(inputs, dec_inputs, char2numY, n_channels=10, input_depth=280,
     return logits
 
 
-def main():
+def main(i):
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', type=int, default=1000)
     parser.add_argument('--max_time', type=int, default=9)
@@ -190,8 +190,8 @@ def main():
     parser.add_argument('--use_Embedding', type=bool, default=False)
     parser.add_argument('--num_units', type=int, default=128)
     parser.add_argument('--n_oversample', type=int, default=6000)
-    parser.add_argument('--checkpoint_dir', type=str, default='G:/ECG_data/Abalation1/model')
-    parser.add_argument('--result_dir', type=str, default='G:/ECG_data/Abalation1/result_0')
+    parser.add_argument('--result_dir', type=str, default='G:/ECG_data/Abalation1/result_' + str(i))
+    parser.add_argument('--checkpoint_dir', type=str, default='G:/ECG_data/Abalation1/result_' + str(i) + '/model')
     parser.add_argument('--ckpt_name', type=str, default='seq2seq_mitbih_DS1DS2.ckpt')
     parser.add_argument('--classes', nargs="+", type=chr, default=['N', 'S', 'V'])
     args = parser.parse_args()

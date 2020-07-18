@@ -42,9 +42,18 @@ def batch_data(X, y, batch_size):
 def mkdir(dir_path):
     # 存在此目录则删除，不存在则创建
     if os.path.exists(dir_path):
-        os.rmdir(dir_path)
-    elif not os.path.exists(dir_path):
+        for root, dirs, files in os.walk(dir_path):
+            for file in files:
+                os.remove(os.path.join(root, file))
+            for dir in dirs:
+                for root2, _, files in os.walk(os.path.join(root, dir)):
+                    for f in files:
+                        os.remove(os.path.join(root2, f))
+        print("{} -> 删除目录、子目录、子文件成功!".format(dir_path))
+
+    if not os.path.exists(dir_path):
         os.mkdir(dir_path)
+        print("{} -> 目录创建成功！")
 
 def best_result(TXT_name): # 用于选取所有epoch的最优结果，主要关注S类的SEN和PPV，以及V类的PPV
     result = np.loadtxt(TXT_name)
