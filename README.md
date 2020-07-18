@@ -27,9 +27,13 @@
 > ** 消融实验 **
 
     1. 不带Attention的CNN + Seq2Seq
-     (GPU) CUDA_VISIBLE_DEVICES=0 python Ablation1.py --use_Embedding
+     (GPU) CUDA_VISIBLE_DEVICES=0 python Ablation1.py --use_Embedding True
 
     2. 直接Seq2Seq(需要对输入进行标准化)，即不需要Embedding层
      (GPU) CUDA_VISIBLE_DEVICES=0 python Ablation1.py
-**其他说明**
-1. 对于以上消融实验，跑10次，每次结果通过result_dir保存
+    
+    3. 带有Attention机制的CNN + Seq2Seq
+    （GPU）CUDA_VISIBLE_DEVICES=1 python Ablation1 --use_Embedding True --use_SE True
+**说明**
+1. 直接运行以上几个命令，每个消融实验会自动跑10次
+2. 每个消融实验，你只需要修改--checkpoint_dir和--result_dir一个是保存模型的目录，一个是保存每个Epoch中测试结果的目录
