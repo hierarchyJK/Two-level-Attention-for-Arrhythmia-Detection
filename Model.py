@@ -49,17 +49,21 @@ class model():
                                   activation=tf.nn.relu)  # shape=[None, 10, 32]
         max_pool_1 = tf.layers.max_pooling1d(inputs=conv_1, pool_size=2, strides=2,
                                              padding='same')  # shape = [None, 5, 32]
+        up1 = self.SE_net(max_pool_1, 4)
+        max_pool_1 = max_pool_1 * up1
 
         conv_2 = tf.layers.conv1d(inputs=max_pool_1, filters=64, kernel_size=2, strides=1, padding='same',
                                   activation=tf.nn.relu)  # shape = [None, 5, 64]
         max_pool_2 = tf.layers.max_pooling1d(inputs=conv_2, pool_size=2, strides=2, padding='same')  # shape = [3, 64]
+        up2 = self.SE_net(max_pool_2, 8)
+        max_pool_2 = max_pool_2 * up2
 
         conv_3 = tf.layers.conv1d(inputs=max_pool_2, filters=128, kernel_size=2, strides=1, padding='same',
                                   activation=tf.nn.relu)  # shape = [None, 3, 128]
 
         # shape = conv_3.get_shape().as_list()
-        up = self.SE_net(conv_3, 8)
-        SE_conv3 = conv_3 * up
+        up3 = self.SE_net(conv_3, 16)
+        SE_conv3 = conv_3 * up3
         shape = SE_conv3.get_shape().as_list()
 
         data_input_embed = tf.reshape(SE_conv3, (-1, max_time, shape[1] * shape[2]))
