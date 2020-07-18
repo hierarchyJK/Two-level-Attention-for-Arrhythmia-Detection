@@ -347,7 +347,9 @@ if __name__ == "__main__":
     """消融实验：CNN + Seq2Seq 和 不带Embedding的Seq2Seq"""
     time_start = time.time()
     print("=============TRAIN_START=============")
-    main()
+    times = 10
+    for i in range(times):
+        main(i)
     print("=============TRAIN_end=============")
     time_end = time.time()
     print("跑一次耗时：{:.4f}".format(time_end - time_start))
