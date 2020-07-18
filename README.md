@@ -1,4 +1,4 @@
-# Attention,Attention!! It's Arrhythmia
+# A Two-level Attention-based Sequence to SequenceModel for Accurate Inter-patient ArrhythmiaDetection
 #### 该实验引入注意力机制对病人间基于心拍分类的心律失常进行检测
 
 
