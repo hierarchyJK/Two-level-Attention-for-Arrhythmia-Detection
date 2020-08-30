@@ -17,7 +17,7 @@
 - --result_dir: Directory that saves the raw results, change this to your own path （保存每一次实验所有的epoch结果的目录，需要改为自己的目录）
 - --other: Do NOT change the other perameters unless you know what you are doing. （其他的参数不需要改）
 
-> **Inter-patient Performance 患者间心律性能**
+> **Inter-patient Performance 患者间性能**
 
 All experimental results are averaged over ten runs. 取10次实验的平均结果
 
