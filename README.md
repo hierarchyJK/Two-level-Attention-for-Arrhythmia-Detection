@@ -82,6 +82,7 @@ All experimental results are averaged over ten runs. 取10次实验的平均结�
 | F |1.00|1.00|1.00|1.00|
 
 > **License 使用许可**
+
 This code is for academic and non-commercial usage only. Also, our code is a modified version of the code of Dr. Sajad Mousavi and Dr. Fatemeh Afghah's excellent paper "Inter- and Intra-Patient ECG Heartbeat Classification For Arrhythmia Detection: A Sequence to Sequence Deep Learning Approach" (https://github.com/MousaviSajad/ECG-Heartbeat-Classification-seq2seq-model). We sincerely thank Dr. Mousavi for granting us permission to publish our modified code. If you wish to republish our code (including any modified versions of it), please first gain permission from Dr. Mousavi and Dr. Afghah. We are more than happy for you to republish our code as long as you have their permission to do so.
 
 
